@@ -5,3 +5,4 @@
 
   examples/mlp_models/index
   examples/sample_selection/index
+  examples/roy_gch/index
