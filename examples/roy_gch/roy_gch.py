@@ -289,4 +289,11 @@ if chemiscope.jupyter._is_running_in_notebook():
 
     display(cs)
 else:
-    cs.save("roy_gch.json.gz")
+    cs_file = "roy_gch.json.gz"
+    print(f"""
+.. note::
+    You can download the example data file here: 
+    :download:`{cs_file} <{cs_file}>`.
+""")
+    fig.savefig("testme.png")
+    cs.save(cs_file)

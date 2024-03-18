@@ -1,8 +1,10 @@
 import os
 import shutil
 import sys
+from glob import glob
 
 import sphinx_gallery.gen_gallery
+
 
 
 HERE = os.path.realpath(os.path.dirname(__file__))
@@ -13,6 +15,40 @@ class AttrDict(dict):
         super().__init__()
         self.__dict__ = self
 
+
+from sphinx_gallery.scrapers import figure_rst
+class ChemiscopeScraper(object):
+    def __init__(self):
+        self.seen = set()
+
+    def __repr__(self):
+        return 'ChemiscopeScraper'
+
+    def __call__(self, block, block_vars, gallery_conf):
+        # Find all chemiscope files (compressed json) in the directory of this example.
+        path_current_example = os.path.dirname(block_vars['src_file'])
+        cs_files = sorted(glob(os.path.join(path_current_example, '*.json.gz')))
+
+        print("FOUND ", cs_files)
+        # Iterate through chsmiscope files, copy them to the sphinx-gallery output directory
+        rst_string = ""
+        gallery_dir = gallery_conf['gallery_dirs']
+        print("GALLERY ", gallery_dir)
+        for cs in cs_files:
+            if cs not in self.seen:
+                self.seen |= set(cs)
+                print(list(block_vars.keys()))
+                this_path = os.path.join(gallery_dir, os.path.basename(cs))
+                print("file ", cs)
+                shutil.move(cs, this_path)
+                print("moving to ", this_path)
+                rst_string += f"""
+.. note::
+    You can download the example data file here: 
+    :download:`{cs} <{this_path}>`.
+
+"""
+        return rst_string
 
 class PseudoSphinxApp:
     """
@@ -38,8 +74,9 @@ class PseudoSphinxApp:
             "examples_dirs": os.path.join(HERE, example),
             "gallery_dirs": gallery_dir,
             "min_reported_time": 60,
-            "copyfile_regex": r".*\.(sh|xyz|cp2k)",
+            "copyfile_regex": r".*\.(sh|xyz|cp2k|json|json.gz)",
             "matplotlib_animations": True,
+            'image_scrapers': ('matplotlib', ChemiscopeScraper()),
         }
 
         self.builder = AttrDict()
