@@ -2,9 +2,8 @@
 LODE Tutorial
 =============
 
-This tutorial explains how Long range equivariant descriptors can be constructed using
-rascaline and the resulting descriptors be used to construct a linear model with
-equisolve
+This tutorial explains how to compute and use the LOng-Distance Equivariant (LODE)
+descriptors using rascaline and equisolve.
 
 First, import all the necessary packages
 """
@@ -50,7 +49,7 @@ frames = ase.io.read("charge-charge.xyz", ":")
 # If we want to train models using the
 # `equisolve <https://github.com/lab-cosmo/equisolve>`_ package, we need to
 # convert the target properties (in this case, the energies and forces)
-# into the appropriate format #justequistorethings
+# into the appropriate format #justmetatensorthings
 
 y = ase_to_tensormap(frames, energy="energy", forces="forces")
 
@@ -63,10 +62,10 @@ y = ase_to_tensormap(frames, energy="energy", forces="forces")
 # Define hypers and get the expansion coefficients :math:`\langle anlm | \rho_i \rangle`
 # and :math:`\langle anlm | V_i \rangle`
 #
-# The short-range and long-range descriptors have very similar hyperparameters. We
+# The short-range (SR) and long-range (LR) descriptors have very similar hyperparameters. We
 # highlight the differences below.
 #
-# We first define the hyperparameters for the short-range (SR) part. These will be used
+# We first define the hyperparameters for the SR part. These will be used
 # to create SOAP features.
 
 SR_HYPERS = {
@@ -82,7 +81,7 @@ SR_HYPERS = {
 
 # %%
 #
-# And next the hyperparaters for the LODE / long-range (LR) part
+# And next the hyperparameters for the LODE / LR part
 
 
 LR_HYPERS = {
@@ -102,8 +101,8 @@ LR_HYPERS = {
 
 
 # %%
-# We then use the above defined hyperparaters to define the per atom short range (sr)
-# and long range (sr) descriptors.
+# We then use the above defined hyperparaters to define the per atom SR and LR
+# descriptors.
 
 calculator_sr = SphericalExpansion(**SR_HYPERS)
 calculator_lr = LodeSphericalExpansion(**LR_HYPERS)
@@ -111,17 +110,18 @@ calculator_lr = LodeSphericalExpansion(**LR_HYPERS)
 
 # %%
 #
-# Note that LODE requires periodic systems. Therefore, if the data set does not come
+# Note that the current implementation of LODE requires periodic systems.
+# Therefore, if the data set does not come
 # with periodic boundary conditions by default you can not use the data set and you will
 # face an error if you try to compute the features.
 #
-# As you notices the calculation of the long range features takes significant more time
-# compared to the sr features.
+# As you notice the calculation of the LR features takes significantly more time
+# compared to the SR features.
 #
 # Taking a look at the output we find that the resulting
-# :py:class:`metatensor.TensorMap` are quite similar in their structure. The short range
-# :py:class:`metatensor.TensorMap` contains more blocks due to the higher
-# ``max_angular`` paramater we choosed above.
+# :py:class:`metatensor.TensorMap` between the SR and LR descriptors are quite similar in
+# their structure. The SR :py:class:`metatensor.TensorMap` contains more blocks due to
+# the higher ``max_angular`` paramater we chose above.
 #
 # Generate the rotational invariants (power spectra)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -129,7 +129,7 @@ calculator_lr = LodeSphericalExpansion(**LR_HYPERS)
 # Rotationally invariant features can be obtained by taking two of the calculators that
 # were defines above.
 #
-# For the short-range part, we use the SOAP vector which is obtained by computing the
+# For the SR part, we use the SOAP vector which is obtained by computing the
 # invariant combinations of the form :math:`\rho \otimes \rho`.
 
 ps_calculator_sr = PowerSpectrum(calculator_sr, calculator_sr)
@@ -142,7 +142,7 @@ ps_sr = ps_calculator_sr.compute(frames, gradients=["positions"])
 # ``gradients=["positions"]`` option to the
 # :py:meth:`rascaline.calculators.CalculatorBase.compute()` method.
 #
-# For the long-range part, we combine the long-range descriptor :math:`V` with one a
+# For the LR part, we combine the LR descriptor :math:`V` with one a
 # short-range density :math:`\rho` to get :math:`\rho \otimes V` features.
 
 ps_calculator_lr = PowerSpectrum(calculator_sr, calculator_lr)
@@ -201,8 +201,8 @@ co = metatensor.sum_over_samples(co, sample_names=["center"])
 #    descriptor_co = AtomicComposition(per_structure=True).compute(**compute_args)
 #    co = descriptor_co.keys_to_properties(["species_center"])
 #
-# Stack all the features together for linear model
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Stack all the features together for a linear model
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 # A linear model on SR + LR features can be thought of as a linear model
 # built on a feature vector that is simply the concatenation of the SR and
