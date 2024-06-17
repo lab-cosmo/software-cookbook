@@ -280,6 +280,11 @@ known polymorphs of ROY are on (or very close) to this hull.
         ],
     },
 )
+cs
+
+# %%
+#
+# Also save to a file that can be viewed on chemiscope.org
 
 # %%
 #
