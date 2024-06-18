@@ -2,6 +2,7 @@ import glob
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -71,6 +72,20 @@ def get_example_files():
     filtered_files = filter_files(tracked_files_output)
 
     return [folder + "/" + file for file in filtered_files]
+
+
+# We want to mimic
+# git ls-files --other examples
+def get_example_other_files(fd):
+    folder = os.getcwd() + "/" + fd
+    # Get the list of ignored files
+    # Get the list of all not tracked files
+    tracked_files_command = ["git", "ls-files", "--other", folder]
+    tracked_files_output = subprocess.check_output(
+        tracked_files_command, cwd=folder, text=True
+    )
+
+    return [folder + "/" + file for file in tracked_files_output.splitlines()]
 
 
 def should_reinstall_dependencies(session, **metadata):
@@ -255,3 +270,21 @@ def format(session):
     session.run("black", *LINT_FILES)
     session.run("blackdoc", *LINT_FILES)
     session.run("isort", *LINT_FILES)
+
+
+@nox.session
+def clean_build(session):
+    """Remove temporary files and building folders"""
+
+    # remove building folders
+    for i in ["docs/src/examples/", "docs/build"]:
+        if os.path.isdir(i):
+            shutil.rmtree(i)
+    # remove temp files if any
+    for ifile in get_example_other_files("examples") + get_example_other_files("docs/"):
+        os.remove(ifile)
+    flist = glob.glob("examples/*")
+    # Remove empty folders
+    for fl in flist:
+        if 0 == len(glob.glob(fl + "/*")):
+            os.rmdir(fl)
